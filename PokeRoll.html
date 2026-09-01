@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>
+    PokeRoll
+  </title>
+  <style>
+    .main-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+
+      margin-bottom: 50px;
+    }
+
+    .output-label {
+      margin-top: 150px;
+      margin-bottom: 30px;
+
+      font-size: 30px;
+    }
+
+    .roll-button,
+    .auto-roll-button {
+      border: none;
+      padding-top: 12px;
+      padding-bottom: 12px;
+      padding-right: 45px;
+      padding-left: 45px;
+      font-size: 20px;
+
+      border-radius: 10px;
+
+      cursor: pointer;
+
+      margin-top: 7px;
+      margin-bottom: 7px;
+
+      transition: background-color 0.15s ease-in-out 0s;
+
+    }
+
+    .roll-button:hover,
+    .auto-roll-button:hover,
+    .pokemon-unlocked:hover {
+      background-color: rgb(168, 168, 168);
+
+      cursor: pointer;
+    }
+
+    .roll-button:active,
+    .auto-roll-is-active,
+    .pokemon-unlocked:active {
+      background-color: rgb(100, 100, 100);
+
+    }
+
+
+    .document-wrapper {
+      display: flex;
+      justify-content: center;
+    }
+
+    .pokemon-container {
+
+      /*
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      */
+
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(85px, max-content));
+      justify-content: center;
+
+      gap: 10px;
+
+      width: 100%;
+      max-width: 1200px;
+
+      margin-bottom: 20px;
+    }
+
+    .pokemon {
+      background-color: lightgray;
+      width: 85px;
+      height: 85px;
+      font-size: 14px;
+      border: none;
+
+      border-radius: 10px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+
+      transition: background-color 0.15s ease-in-out 0s;
+
+    }
+  </style>
+</head>
+
+<body>
+  <div class="main-container">
+    <div class="output-label js-output-label">
+      Roll your Pokemon
+
+    </div>
+
+    <button class="roll-button js-roll-button">
+      Roll
+    </button>
+
+    <button class="auto-roll-button js-auto-roll-button">
+      Auto-roll
+    </button>
+    <div class="how-many-pokemon js-how-many-pokemon">
+      Caught: 0/151
+    </div>
+  </div>
+
+  <div class="document-wrapper">
+    <div class="pokemon-container">
+
+    </div>
+  </div>
+
+
+  <script src="Pokemon.js"></script>
+  <script>
+    const caughtPokemon = JSON.parse(localStorage.getItem('caughtPokemon')) || [];
+
+    const rollButton = document.querySelector('.js-roll-button');
+    const outputLabel = document.querySelector('.js-output-label');
+    const pokemonCaughtHtml = document.querySelector('.js-how-many-pokemon');
+
+    if (caughtPokemon.length === 0) {
+      pokemonCaughtHtml.innerHTML = 'Caught: 0/151'
+    }
+    else {
+      pokemonCaughtHtml.innerHTML = `Caught: ${caughtPokemon.length}/151`;
+    }
+
+    generatePokemonContainer();
+
+    rollButton.addEventListener('click', () => {
+      rollForPokemon();
+    });
+
+    function getRandomIn(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generatePokemonContainer() {
+
+      let html = '';
+
+      for (let i = 0; i < gen1Pokemon.length; i++) {
+        html += `
+    <button class="pokemon js-pokemon-${i}">
+    ${i + 1}
+    </button>
+    `
+
+      }
+      document.querySelector('.pokemon-container').innerHTML = html;
+
+      // generate the pokemons inside the container
+      if (caughtPokemon) {
+        for (i = 0; i < gen1Pokemon.length; i++) {
+          caughtPokemon.forEach(pokemon => {
+            if (pokemon === gen1Pokemon[i]) {
+              addDataToContainer(i, pokemon)
+            }
+          });
+        }
+      }
+
+    }
+
+
+    const autoRollButton = document.querySelector('.js-auto-roll-button');
+    let autoroll = false;
+
+    let intervalId;
+    autoRollButton.addEventListener('click', () => {
+
+
+      if (autoroll) {//if turned off
+        clearInterval(intervalId);
+
+        autoRollButton.classList.remove('auto-roll-is-active');
+        autoroll = false;
+      }
+      else {//if turned on
+
+        intervalId = setInterval(() => {
+          rollForPokemon();
+        }, 500);
+        autoRollButton.classList.add('auto-roll-is-active');
+        autoroll = true;
+      }
+
+
+    });
+
+    function rollForPokemon() {
+      const randomNum = getRandomIn(0, 150)
+      const randomPokemon = gen1Pokemon[randomNum];
+
+      outputLabel.innerHTML = `You caught: ${randomPokemon}`;
+
+
+
+
+
+      if (caughtPokemon.length === 0) {
+        caughtPokemon.push(randomPokemon);
+      }
+      else {
+
+        for (let i = 0; i < caughtPokemon.length; i++) {
+          if (randomPokemon === caughtPokemon[i]) {
+            outputLabel.innerHTML = `Already Caught, ${randomPokemon}!`;
+
+            break;
+          }
+          else if (i === caughtPokemon.length - 1) {
+            caughtPokemon.push(randomPokemon);
+            break;
+          }
+        }
+
+      }
+
+      addDataToContainer(randomNum, randomPokemon);
+
+      document.querySelector('.js-how-many-pokemon').innerHTML = `Caught: ${caughtPokemon.length}/${gen1Pokemon.length}`;
+
+      localStorage.setItem('caughtPokemon', JSON.stringify(caughtPokemon));
+
+      if (caughtPokemon.length === gen1Pokemon.length) {
+        if(autoroll)
+          autoRollButton.click();
+
+        alert('Congrats! You got all the Pokemon in Gen 1!')
+      }
+
+    }
+
+    function addDataToContainer(pokeNum, pokeName) {
+      const audio = new Audio(`PokemonCries/${String(pokeNum + 1).padStart(3, '0')}.wav`);
+      for (let i = 0; i < gen1Pokemon.length; i++) {
+        if (i === pokeNum) {
+          const pokemonContainer = document.querySelector(`.js-pokemon-${i}`);
+          pokemonContainer.innerHTML = pokeName;
+          pokemonContainer.classList.add('pokemon-unlocked');
+          pokemonContainer.addEventListener('click', () => {
+
+            audio.currentTime = 0;
+            audio.play();
+          });
+        }
+      }
+    }
+
+
+    
+  </script>
+
+</body>
+
+</html>
